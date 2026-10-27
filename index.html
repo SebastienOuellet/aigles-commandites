@@ -56,6 +56,7 @@
         .regle{font-size:14px;color:var(--muted);background:#f5f7fb;border-radius:10px;padding:10px 12px;margin-bottom:12px}
         .seuil{margin-top:10px;background:var(--gold-soft);border-radius:10px;padding:10px 12px;font-size:14px}
         #ratioBox.off{opacity:.4;pointer-events:none}
+        .gcard{border:2px solid var(--gold)}
         .testbar{background:#b42318;color:#fff;text-align:center;font-weight:700;font-size:14px;padding:8px 16px;letter-spacing:.04em}
         .drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;cursor:pointer;
             color:var(--muted);transition:.15s;background:#fafbfd}
@@ -95,14 +96,32 @@
 <header>
     <div class="wrap">
         <small id="org">Aigles AAA de Sherbrooke</small>
-        <h1>Déclarer une commandite</h1>
-        <p>Remplis le formulaire. La facture est créée automatiquement, envoyée par courriel à toi et à la gérante, et tu peux la télécharger tout de suite.</p>
+        <h1 id="titre">Déclarer une commandite</h1>
+        <p id="intro">Remplis le formulaire. La facture est créée automatiquement, envoyée par courriel à toi et à la gérante, et tu peux la télécharger tout de suite.</p>
     </div>
 </header>
 
 <main>
     <form id="f" novalidate>
         <div class="err" id="err" role="alert"></div>
+
+        <!-- Mode gérante (lien ?gerante) -->
+        <section class="card gcard" id="gCard" hidden>
+            <h2><span class="num">G</span>Mode gérante</h2>
+            <p class="hint">Pour inscrire une commandite déjà conclue. Rien n’est envoyé sauf si tu coches les cases.</p>
+            <div class="grid">
+                <div class="full"><label for="codeGerante">Code gérante</label><input id="codeGerante" type="password" autocomplete="off"></div>
+                <div><label for="noExistant">N° de facture déjà émis <span class="opt">(optionnel)</span></label>
+                    <input id="noExistant" inputmode="numeric" placeholder="Vide = prochain numéro"></div>
+                <div><label for="dateFacture">Date de la facture</label><input id="dateFacture" type="date"></div>
+                <label class="check full"><input type="checkbox" id="envoyerParent"> Envoyer la facture au parent par courriel</label>
+                <label class="check full"><input type="checkbox" id="envoyerGerante"> M’envoyer une copie (courriel gérante)</label>
+                <label class="check full"><input type="checkbox" id="dejaPaye"> Déjà payé</label>
+                <div id="pmtWrap" hidden><label for="datePmt">Date du paiement</label><input id="datePmt" type="date"></div>
+                <div id="modeWrap" hidden><label for="modePmt">Mode</label>
+                    <select id="modePmt"><option>Virement Interac</option><option>Chèque</option><option>Argent comptant</option><option>Autre</option></select></div>
+            </div>
+        </section>
 
         <!-- 1. Équipe et joueur -->
         <section class="card">
@@ -124,8 +143,8 @@
 
         <!-- 2. Parent -->
         <section class="card">
-            <h2><span class="num">2</span>Toi, le parent</h2>
-            <p class="hint">Tu vas recevoir la facture à ce courriel.</p>
+            <h2><span class="num">2</span><span id="pTitre">Toi, le parent</span></h2>
+            <p class="hint" id="pHint">Tu vas recevoir la facture à ce courriel.</p>
             <div class="grid">
                 <div class="full"><label for="parentNom">Ton nom</label><input id="parentNom" name="parentNom" autocomplete="name" required></div>
                 <div><label for="parentCourriel">Ton courriel</label><input id="parentCourriel" name="parentCourriel" type="email" autocomplete="email" required></div>
@@ -196,7 +215,7 @@
         </section>
 
         <section class="card">
-            <label class="check"><input type="checkbox" id="confirme" required>
+            <label class="check" id="confWrap"><input type="checkbox" id="confirme" required>
                 Je confirme que le commanditaire a accepté ce montant et que les informations sont exactes.</label>
             <div style="margin-top:16px"><button class="btn" id="go" type="submit">Créer la facture</button></div>
         </section>
@@ -224,6 +243,27 @@
     (function(){
         var CFG = null, logoFile = null, dernier = null;
         var $ = function(id){ return document.getElementById(id); };
+        var GERANTE = false;
+        try { GERANTE = new URLSearchParams(location.search).has('gerante'); } catch (e) {}
+        function store(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+        function initGerante(){
+            if (!GERANTE) return;
+            $('gCard').hidden = false;
+            $('titre').textContent = 'Saisie gérante';
+            $('intro').textContent = 'Inscris les commandites déjà conclues. La facture est créée et classée; les courriels sont optionnels.';
+            $('pTitre').textContent = 'Parent';
+            $('pHint').textContent = 'Optionnel si aucun courriel n’est envoyé au parent.';
+            ['parentNom','parentCourriel','adresse','ville','codePostal'].forEach(function(id){
+                var l = $(id).labels[0]; if (l && !l.querySelector('.opt')) l.insertAdjacentHTML('beforeend', ' <span class="opt">(optionnel)</span>');
+            });
+            var auj = new Date(); auj.setMinutes(auj.getMinutes() - auj.getTimezoneOffset());
+            $('dateFacture').value = $('datePmt').value = auj.toISOString().slice(0, 10);
+            $('codeGerante').value = store('aiglesCodeGerante') || '';
+            $('dejaPaye').addEventListener('change', function(){ $('pmtWrap').hidden = $('modeWrap').hidden = !this.checked; });
+            $('go').textContent = 'Enregistrer la commandite';
+            $('confWrap').hidden = true;
+        }
 
         // URL /exec du déploiement Apps Script (pour la version hébergée hors Google)
         var API_URL = 'https://script.google.com/macros/s/AKfycbxyvYo_v8g4UXGDKRPqfN49eACqys3MlAhROFyZleTzIZoiloMdJbGHfgWFuQL2-qMV/exec';
@@ -350,12 +390,15 @@
             if (!equipeChoisie()) manque.push('l’équipe');
             var j = $('joueurSel').value === '__autre' ? $('joueurAutre').value.trim() : $('joueurSel').value;
             if (!j) manque.push('le joueur');
-            ['parentNom','commanditaire','adresse','ville'].forEach(function(id){ if (!$(id).value.trim()) manque.push($(id).labels[0].childNodes[0].textContent.trim().toLowerCase()); });
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test($('parentCourriel').value.trim())) manque.push('ton courriel (valide)');
-            if (!/^[A-Z]\d[A-Z] ?\d[A-Z]\d$/.test($('codePostal').value.trim())) manque.push('le code postal (ex. J1H 1A1)');
+            var oblig = GERANTE ? ['commanditaire'] : ['parentNom','commanditaire','adresse','ville'];
+            oblig.forEach(function(id){ if (!$(id).value.trim()) manque.push($(id).labels[0].childNodes[0].textContent.trim().toLowerCase()); });
+            var pc = $('parentCourriel').value.trim(), cp = $('codePostal').value.trim();
+            if ((!GERANTE || $('envoyerParent').checked || pc) && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(pc)) manque.push('le courriel du parent (valide)');
+            if ((!GERANTE || cp) && !/^[A-Z]\d[A-Z] ?\d[A-Z]\d$/.test(cp)) manque.push('le code postal (ex. J1H 1A1)');
+            if (GERANTE && !$('codeGerante').value.trim()) manque.push('le code gérante');
             if ($('courriel').value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test($('courriel').value.trim())) manque.push('le courriel du commanditaire (invalide)');
             if (!(montant() > 0)) manque.push('le montant');
-            if (!$('confirme').checked) manque.push('la case de confirmation');
+            if (!GERANTE && !$('confirme').checked) manque.push('la case de confirmation');
             return { joueur: j, manque: manque };
         }
 
@@ -372,6 +415,12 @@
             };
             ['parentNom','parentCourriel','parentTel','commanditaire','contact','adresse','ville','province',
                 'codePostal','telephone','courriel','siteWeb','description','notes'].forEach(function(k){ data[k] = $(k).value.trim(); });
+            if (GERANTE) {
+                data.codeGerante = $('codeGerante').value.trim(); store('aiglesCodeGerante', data.codeGerante);
+                data.noExistant = $('noExistant').value.trim(); data.dateFacture = $('dateFacture').value;
+                data.envoyerParent = $('envoyerParent').checked; data.envoyerGerante = $('envoyerGerante').checked;
+                data.dejaPaye = $('dejaPaye').checked; data.datePmt = $('datePmt').value; data.modePmt = $('modePmt').value;
+            }
 
             $('go').disabled = true; $('ov').style.display = 'grid';
             (logoFile ? lireBase64(logoFile) : Promise.resolve(null))
@@ -391,12 +440,16 @@
             $('sRep').textContent = data.pctEquipe >= 100 ? '100 % équipe' : 'Équipe ' + data.pctEquipe + ' % · Joueur ' + (100 - data.pctEquipe) + ' %';
             if (res.test) $('sNo').textContent = res.no + ' (test)';
             var m = res.courriels || {};
-            $('sMail').textContent = m.parent
-                ? 'Une copie a été envoyée à ' + data.parentCourriel + (m.gerante ? ' et à la gérante.' : '.')
-                : 'Le courriel n’a pas pu être envoyé — télécharge le PDF et transmets-le à la gérante.';
+            if (GERANTE) {
+                $('sMail').textContent = 'Enregistrée dans le Sheet. Courriels — ' + (m.resume || 'aucun');
+            } else {
+                $('sMail').textContent = m.parent
+                    ? 'Une copie a été envoyée à ' + data.parentCourriel + (m.gerante ? ' et à la gérante.' : '.')
+                    : 'Le courriel n’a pas pu être envoyé — télécharge le PDF et transmets-le à la gérante.';
+            }
             $('f').hidden = true; $('succes').style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            telecharger();
+            if (!GERANTE) telecharger();
         }
 
         function telecharger(){
@@ -414,6 +467,7 @@
             // Garde équipe, joueur et parent; vide le commanditaire
             ['commanditaire','contact','adresse','ville','codePostal','telephone','courriel','siteWeb','notes','montant'].forEach(function(k){ $(k).value = ''; });
             $('province').value = 'QC'; $('confirme').checked = false;
+            if (GERANTE) { ['noExistant','parentNom','parentCourriel','parentTel'].forEach(function(k){ $(k).value = ''; }); $('dejaPaye').checked = false; $('pmtWrap').hidden = $('modeWrap').hidden = true; }
             logoFile = null; fi.value = ''; $('preview').hidden = true;
             $('dropTxt').innerHTML = '<b>Clique ici</b> ou glisse le fichier du logo';
             $('pctEquipe').value = CFG.pctMin; maj();
@@ -422,6 +476,7 @@
             $('commanditaire').focus();
         });
 
+        initGerante();
         appel('getFormConfig').then(init).catch(function(e){ erreur('Impossible de charger le formulaire : ' + (e && e.message || e)); });
     })();
 </script>
