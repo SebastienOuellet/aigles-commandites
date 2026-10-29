@@ -80,7 +80,7 @@
 <header>
     <div class="wrap top">
         <div><small>Aigles AAA de Sherbrooke</small><h1>Espace gérante</h1></div>
-        <div><a href="./" target="_blank">Formulaire des parents ↗</a> <span id="out" hidden>· <a href="#" id="logout">Changer de code</a></span></div>
+        <div><a href="./" target="_blank">Formulaire des parents ↗</a> <span id="out" hidden>· <a href="#" id="logout">Se déconnecter</a></span></div>
     </div>
 </header>
 
@@ -89,7 +89,7 @@
     <section class="card" id="login">
         <label for="code">Code gérante</label>
         <form class="row" id="loginForm">
-            <input id="code" type="password" autocomplete="current-password" required>
+            <input id="code" type="password" autocomplete="off" required>
             <button class="btn" id="loginBtn">Entrer</button>
         </form>
         <div class="err" id="loginErr"></div>
@@ -271,7 +271,6 @@
         var CODE = '', DATA = [], CFG = null, REG = { pctMin: 30, seuil: 250 }, courant = null, dernierPdf = null, edite = null, derniereFacture = null;
         var filtre = { equipe: '', statut: 'attente', q: '' };
 
-        function store(k, v){ try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
 
         function api(action, extra){
             var body = Object.assign({ action: action, code: CODE }, extra || {});
@@ -308,15 +307,26 @@
             CODE = $('code').value.trim(); if (!CODE) return;
             $('loginBtn').disabled = true; montrerErr('loginErr', '');
             charger().then(function(){
-                store('aiglesCodeGerante', CODE);
-                $('login').hidden = true; $('app').hidden = false; $('out').hidden = false;
+                $('login').hidden = true; $('app').hidden = false; $('out').hidden = false; relancer();
             }).catch(function(err){ montrerErr('loginErr', err.message); })
                 .finally(function(){ $('loginBtn').disabled = false; });
         });
-        $('logout').addEventListener('click', function(e){
-            e.preventDefault(); store('aiglesCodeGerante', null); CODE = ''; $('code').value = '';
-            $('app').hidden = true; $('out').hidden = true; $('login').hidden = false; $('code').focus();
-        });
+        // Déconnexion : efface le code en mémoire et la liste affichée
+        function deconnecter(msg){
+            CODE = ''; DATA = []; CFG = null; $('code').value = ''; $('list').innerHTML = '';
+            ['ov','ovA','ovE'].forEach(function(id){ $(id).classList.remove('open'); });
+            $('app').hidden = true; $('out').hidden = true; $('login').hidden = false;
+            montrerErr('loginErr', msg || ''); $('code').focus();
+        }
+        $('logout').addEventListener('click', function(e){ e.preventDefault(); deconnecter(); });
+
+        // Verrouillage automatique après 20 minutes sans activité
+        var INACTIF_MS = 20 * 60 * 1000, minuterie = null;
+        function relancer(){
+            clearTimeout(minuterie);
+            if (CODE) minuterie = setTimeout(function(){ deconnecter('Session verrouillée après 20 minutes d’inactivité.'); }, INACTIF_MS);
+        }
+        ['click','keydown','input','scroll','touchstart'].forEach(function(ev){ document.addEventListener(ev, relancer, { passive: true }); });
 
         /* ---------- Filtres et liste ---------- */
         function marquer(seg, v){ Array.prototype.forEach.call(seg.children, function(b){ b.classList.toggle('on', b.getAttribute('data-v') === v); }); }
@@ -598,9 +608,9 @@
         });
 
         /* ---------- Démarrage ---------- */
-        var sauve = store('aiglesCodeGerante');
-        if (sauve) { $('code').value = sauve; $('loginForm').requestSubmit ? $('loginForm').requestSubmit() : $('loginBtn').click(); }
-        else $('code').focus();
+        // Le code n'est jamais mémorisé : on efface aussi celui d'une ancienne version
+        try { localStorage.removeItem('aiglesCodeGerante'); } catch (e) {}
+        $('code').focus();
     })();
 </script>
 </body>
