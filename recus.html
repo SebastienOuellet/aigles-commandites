@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>Factures et reçus — Aigles AAA de Sherbrooke</title>
+    <title>Espace gérante — Aigles AAA de Sherbrooke</title>
     <style>
         :root{
             --navy:#0b2545; --navy-2:#13315c; --gold:#c9a227; --gold-soft:#f6ecc8;
@@ -79,8 +79,8 @@
 <body>
 <header>
     <div class="wrap top">
-        <div><small>Aigles AAA de Sherbrooke</small><h1>Factures et reçus</h1></div>
-        <div><a href="./?gerante">← Saisie gérante</a> <span id="out" hidden>· <a href="#" id="logout">Changer de code</a></span></div>
+        <div><small>Aigles AAA de Sherbrooke</small><h1>Espace gérante</h1></div>
+        <div><a href="./" target="_blank">Formulaire des parents ↗</a> <span id="out" hidden>· <a href="#" id="logout">Changer de code</a></span></div>
     </div>
 </header>
 
@@ -98,6 +98,7 @@
     <!-- Liste -->
     <section id="app" hidden>
         <div class="bar">
+            <button class="btn gold" id="add" type="button">+ Ajouter une facture</button>
             <div class="seg" id="fEquipe"><button data-v="" class="on">Toutes</button></div>
             <div class="seg" id="fStatut">
                 <button data-v="attente" class="on">Reçu à émettre</button><button data-v="emis">Reçu émis</button><button data-v="">Toutes</button>
@@ -140,6 +141,73 @@
             <div class="actions" style="justify-content:center">
                 <button class="btn gold" id="dDl" type="button">⬇ Télécharger le PDF</button>
                 <button class="btn ghost" id="dClose" type="button">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fenêtre ajout -->
+<div class="ov" id="ovA" role="dialog" aria-modal="true" aria-labelledby="aTitle">
+    <div class="modal wide">
+        <div id="aForm">
+            <h2 id="aTitle">Ajouter une facture</h2>
+            <div class="sub">Pour une commandite déjà conclue. Aucun courriel n’est envoyé sauf si tu coches les cases.</div>
+            <div class="grid">
+                <div class="sec">Facture</div>
+                <div><label for="a_equipe">Équipe</label><select id="a_equipe"></select></div>
+                <div><label for="a_joueurSel">Joueur</label><select id="a_joueurSel"></select></div>
+                <div class="full" id="a_autreWrap" hidden><label for="a_joueurAutre">Nom du joueur</label><input id="a_joueurAutre"></div>
+                <div><label for="a_noExistant">N° déjà émis <span style="font-weight:400;color:var(--muted)">(optionnel)</span></label>
+                    <input id="a_noExistant" inputmode="numeric" placeholder="Vide = prochain numéro"></div>
+                <div><label for="a_dateFacture">Date de la facture</label><input id="a_dateFacture" type="date"></div>
+
+                <div class="sec">Commanditaire</div>
+                <div class="full"><label for="a_commanditaire">Nom de l’entreprise</label><input id="a_commanditaire"></div>
+                <div><label for="a_contact">Personne contact</label><input id="a_contact"></div>
+                <div><label for="a_telephone">Téléphone</label><input id="a_telephone" type="tel"></div>
+                <div class="full"><label for="a_courriel">Courriel</label><input id="a_courriel" type="email"></div>
+                <div class="full"><label for="a_adresse">Adresse</label><input id="a_adresse"></div>
+                <div><label for="a_ville">Ville</label><input id="a_ville"></div>
+                <div style="display:grid;grid-template-columns:80px 1fr;gap:10px">
+                    <div><label for="a_province">Prov.</label><input id="a_province" maxlength="2" value="QC"></div>
+                    <div><label for="a_codePostal">Code postal</label><input id="a_codePostal" maxlength="7"></div>
+                </div>
+                <div class="full"><label for="a_logo">Logo <span style="font-weight:400;color:var(--muted)">(optionnel, max 8 Mo)</span></label>
+                    <input id="a_logo" type="file" accept=".png,.jpg,.jpeg,.svg,.webp,.pdf,.ai,.eps"></div>
+
+                <div class="sec">Montant</div>
+                <div><label for="a_montant">Montant total ($)</label><input id="a_montant" inputmode="decimal"></div>
+                <div><label for="a_pctEquipe">% équipe</label><input id="a_pctEquipe" type="number" step="5"></div>
+                <div class="note" id="aRegle"></div>
+                <div class="full"><label for="a_description">Description sur la facture</label><input id="a_description"></div>
+
+                <div class="sec">Parent <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">(optionnel)</span></div>
+                <div><label for="a_parentNom">Nom</label><input id="a_parentNom"></div>
+                <div><label for="a_parentCourriel">Courriel</label><input id="a_parentCourriel" type="email"></div>
+
+                <div class="sec">Paiement et courriels</div>
+                <label class="check full"><input type="checkbox" id="a_dejaPaye"> Déjà payé</label>
+                <div id="a_pmtWrap" hidden><label for="a_datePmt">Date du paiement</label><input id="a_datePmt" type="date"></div>
+                <div id="a_modeWrap" hidden><label for="a_modePmt">Mode</label>
+                    <select id="a_modePmt"><option>Virement Interac</option><option>Chèque</option><option>Argent comptant</option><option>Autre</option></select></div>
+                <label class="check full"><input type="checkbox" id="a_envoyerParent"> Envoyer la facture au parent</label>
+                <label class="check full"><input type="checkbox" id="a_envoyerGerante"> M’envoyer une copie (courriel gérante)</label>
+                <div class="full"><label for="a_notes">Notes <span style="font-weight:400;color:var(--muted)">(optionnel)</span></label><input id="a_notes"></div>
+            </div>
+            <div class="err" id="aErr"></div>
+            <div class="actions">
+                <button class="btn ghost" id="aCancel" type="button">Annuler</button>
+                <button class="btn" id="aGo" type="button">Créer la facture</button>
+            </div>
+        </div>
+        <div id="aDone" class="done" hidden>
+            <div class="ic">✓</div>
+            <h2 id="adTitle"></h2>
+            <p id="adMsg"></p>
+            <div class="actions" style="justify-content:center;flex-wrap:wrap">
+                <button class="btn gold" id="adDl" type="button">⬇ Télécharger la facture</button>
+                <button class="btn ghost" id="adEncore" type="button">Ajouter une autre</button>
+                <button class="btn ghost" id="adClose" type="button">Fermer</button>
             </div>
         </div>
     </div>
@@ -200,7 +268,7 @@
         var API_URL = 'https://script.google.com/macros/s/AKfycbxyvYo_v8g4UXGDKRPqfN49eACqys3MlAhROFyZleTzIZoiloMdJbGHfgWFuQL2-qMV/exec';
 
         var $ = function(id){ return document.getElementById(id); };
-        var CODE = '', DATA = [], REG = { pctMin: 30, seuil: 250 }, courant = null, dernierPdf = null, edite = null, derniereFacture = null;
+        var CODE = '', DATA = [], CFG = null, REG = { pctMin: 30, seuil: 250 }, courant = null, dernierPdf = null, edite = null, derniereFacture = null;
         var filtre = { equipe: '', statut: 'attente', q: '' };
 
         function store(k, v){ try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -223,6 +291,7 @@
         /* ---------- Connexion ---------- */
         function charger(){
             $('refresh').disabled = true;
+            if (!CFG) api('config').then(function(c){ CFG = c; }).catch(function(){});
             return api('listeFactures').then(function(res){
                 var rows = res.factures; REG = { pctMin: res.pctMin, seuil: res.seuil };
                 DATA = rows; montrerErr('listErr', '');
@@ -421,6 +490,112 @@
                 .finally(function(){ btn.disabled = false; btn.textContent = 'Enregistrer et régénérer'; });
         });
         $('edDl').addEventListener('click', function(){ telecharger(derniereFacture); });
+
+        /* ---------- Fenêtre ajout ---------- */
+        var addPdf = null;
+        function remplirJoueursA(){
+            var eq = (CFG && CFG.equipes || []).filter(function(e){ return e.nom === $('a_equipe').value; })[0];
+            $('a_joueurSel').innerHTML = '<option value="">Choisis le joueur</option>' +
+                (eq ? eq.joueurs : []).map(function(j){ return '<option>' + esc(j) + '</option>'; }).join('') +
+                '<option value="__autre">Autre / nouveau joueur…</option>';
+            $('a_autreWrap').hidden = true;
+        }
+        function viderA(tout){
+            ['noExistant','commanditaire','contact','telephone','courriel','adresse','ville','codePostal','montant','parentNom','parentCourriel','notes']
+                .forEach(function(k){ $('a_' + k).value = ''; });
+            $('a_logo').value = ''; $('a_province').value = 'QC';
+            $('a_dejaPaye').checked = false; $('a_pmtWrap').hidden = $('a_modeWrap').hidden = true;
+            $('a_envoyerParent').checked = false; $('a_envoyerGerante').checked = false;
+            $('a_dateFacture').value = $('a_datePmt').value = aujourdhui();
+            if (tout) $('a_description').value = (CFG && CFG.description) || '';
+            $('a_pctEquipe').min = REG.pctMin; $('a_pctEquipe').max = 100; $('a_pctEquipe').value = REG.pctMin;
+            majRegleA(); montrerErr('aErr', '');
+            $('aForm').hidden = false; $('aDone').hidden = true;
+        }
+        function ouvrirAjout(){
+            if (!CFG) {
+                $('add').disabled = true; $('add').textContent = 'Chargement…';
+                return api('config').then(function(c){ CFG = c; ouvrirAjout(); })
+                    .catch(function(err){ montrerErr('listErr', 'Impossible de charger les équipes : ' + err.message); })
+                    .finally(function(){ $('add').disabled = false; $('add').textContent = '+ Ajouter une facture'; });
+            }
+            var sel = $('a_equipe');
+            sel.innerHTML = CFG.equipes.map(function(e){ return '<option>' + esc(e.nom) + '</option>'; }).join('');
+            if (filtre.equipe) sel.value = filtre.equipe;
+            remplirJoueursA(); viderA(true);
+            $('ovA').classList.add('open'); $('a_equipe').focus();
+        }
+        function montantA(){ return Number(String($('a_montant').value).replace(/\s|\$/g, '').replace(',', '.')) || 0; }
+        function majRegleA(){
+            var petit = montantA() > 0 && montantA() <= REG.seuil;
+            $('a_pctEquipe').disabled = petit;
+            if (petit) $('a_pctEquipe').value = 100;
+            else if (Number($('a_pctEquipe').value) === 100 && $('a_pctEquipe').dataset.auto) $('a_pctEquipe').value = REG.pctMin;
+            $('a_pctEquipe').dataset.auto = petit ? '1' : '';
+            $('aRegle').textContent = petit ? REG.seuil + ' $ et moins : 100 % à l’équipe.' : 'Minimum ' + REG.pctMin + ' % à l’équipe.';
+        }
+        $('add').addEventListener('click', ouvrirAjout);
+        $('a_equipe').addEventListener('change', remplirJoueursA);
+        $('a_joueurSel').addEventListener('change', function(){ $('a_autreWrap').hidden = this.value !== '__autre'; if (this.value === '__autre') $('a_joueurAutre').focus(); });
+        $('a_montant').addEventListener('input', majRegleA);
+        $('a_dejaPaye').addEventListener('change', function(){ $('a_pmtWrap').hidden = $('a_modeWrap').hidden = !this.checked; });
+        $('a_codePostal').addEventListener('input', function(){
+            var v = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+            this.value = v.length > 3 ? v.slice(0,3) + ' ' + v.slice(3) : v;
+        });
+        function fermerA(){ if ($('aGo').disabled) return; $('ovA').classList.remove('open'); }
+        $('aCancel').addEventListener('click', fermerA);
+        $('adClose').addEventListener('click', fermerA);
+        $('ovA').addEventListener('click', function(e){ if (e.target === this) fermerA(); });
+        document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && $('ovA').classList.contains('open')) fermerA(); });
+        $('adEncore').addEventListener('click', function(){ viderA(false); $('a_commanditaire').focus(); });
+        $('adDl').addEventListener('click', function(){ telecharger(addPdf); });
+
+        function lireFichier(f){
+            return new Promise(function(ok, ko){
+                if (!f) return ok(null);
+                if (f.size > 8 * 1024 * 1024) return ko(new Error('Le logo dépasse 8 Mo.'));
+                var r = new FileReader();
+                r.onload = function(){ ok({ nom: f.name, type: f.type, base64: String(r.result).split(',')[1] }); };
+                r.onerror = function(){ ko(new Error('Lecture du logo impossible.')); };
+                r.readAsDataURL(f);
+            });
+        }
+
+        $('aGo').addEventListener('click', function(){
+            var em = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, err = [];
+            var joueur = $('a_joueurSel').value === '__autre' ? $('a_joueurAutre').value.trim() : $('a_joueurSel').value;
+            var d = {
+                codeGerante: CODE, equipe: $('a_equipe').value, joueur: joueur,
+                noExistant: $('a_noExistant').value.trim(), dateFacture: $('a_dateFacture').value,
+                montant: montantA(), pctEquipe: Number($('a_pctEquipe').value),
+                dejaPaye: $('a_dejaPaye').checked, datePmt: $('a_datePmt').value, modePmt: $('a_modePmt').value,
+                envoyerParent: $('a_envoyerParent').checked, envoyerGerante: $('a_envoyerGerante').checked
+            };
+            ['commanditaire','contact','telephone','courriel','adresse','ville','province','codePostal','description','parentNom','parentCourriel','notes']
+                .forEach(function(k){ d[k] = $('a_' + k).value.trim(); });
+            if (!d.joueur) err.push('le joueur');
+            if (!d.commanditaire) err.push('le nom du commanditaire');
+            if (!(d.montant > 0)) err.push('un montant valide');
+            if (d.montant > REG.seuil && !(d.pctEquipe >= REG.pctMin && d.pctEquipe <= 100)) err.push('un % équipe entre ' + REG.pctMin + ' et 100');
+            if (d.courriel && !em.test(d.courriel)) err.push('un courriel de commanditaire valide');
+            if ((d.envoyerParent || d.parentCourriel) && !em.test(d.parentCourriel)) err.push('un courriel de parent valide');
+            if (d.codePostal && !/^[A-Z]\d[A-Z] ?\d[A-Z]\d$/.test(d.codePostal)) err.push('un code postal valide');
+            if (err.length) return montrerErr('aErr', 'Il faut ' + err.join(', ') + '.');
+            montrerErr('aErr', '');
+            var btn = this; btn.disabled = true; btn.textContent = 'Création…';
+            lireFichier($('a_logo').files[0])
+                .then(function(logo){ if (logo) d.logo = logo; return api('submit', { data: d }); })
+                .then(function(res){
+                    addPdf = res;
+                    $('adTitle').textContent = 'Facture ' + res.no + ' créée';
+                    $('adMsg').textContent = 'Courriels — ' + ((res.courriels && res.courriels.resume) || 'aucun');
+                    $('aForm').hidden = true; $('aDone').hidden = false;
+                    charger().catch(function(){});
+                })
+                .catch(function(err){ montrerErr('aErr', err.message); })
+                .finally(function(){ btn.disabled = false; btn.textContent = 'Créer la facture'; });
+        });
 
         /* ---------- Démarrage ---------- */
         var sauve = store('aiglesCodeGerante');
